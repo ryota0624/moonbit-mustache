@@ -1,6 +1,12 @@
 // spec of mustache
 
 ///|
+struct SpecFile {
+  name : String
+  spec : Spec
+} derive(Eq, Show, ToJson, FromJson)
+
+///|
 priv struct Spec {
   tests : Array[SpecTest]
 } derive(Eq, Show, ToJson, FromJson)
@@ -17,50 +23,9 @@ priv struct SpecTest {
 } derive(Eq, Show, ToJson, FromJson)
 
 ///|
-fn load_spec(path : String) -> Spec raise {
-  let file = read_file(path)
-  parse_file_to_spec(file)
-}
-
-///|
 fn parse_file_to_spec(file : String) -> Spec raise {
   let json = @json.parse(file)
-  let tests = try? {
-      let specsJson = json
-        .value("tests")
-        .or_error(Failure("Missing 'tests' field in spec"))
-      let specsArray = specsJson
-        .as_array()
-        .or_error(Failure("Expected 'tests' to be an array"))
-      let specs = specsArray.map(fn(item : Json) -> SpecTest raise Failure {
-        let itemObj = item
-          .as_object()
-          .or_error(Failure("Expected each test item to be an object"))
-        {
-          name: itemObj
-          .get("name")
-          .bind(t => t.as_string())
-          .or_error(Failure("Missing 'name' field in test")),
-          desc: itemObj
-          .get("desc")
-          .bind(t => t.as_string())
-          .or_error(Failure("Missing 'desc' field in test")),
-          template: itemObj
-          .get("template")
-          .bind(t => t.as_string())
-          .or_error(Failure("Missing 'template' field in test")),
-          expected: itemObj
-          .get("expected")
-          .bind(t => t.as_string())
-          .or_error(Failure("Missing 'expected' field in test")),
-          data: itemObj
-          .get("data")
-          .or_error(Failure("Missing 'data' field in test")),
-        }
-      })
-      { tests: specs }
-    }
-  tests.unwrap_or_error()
+  @json.from_json(json)
 }
 
 ///|
@@ -173,8 +138,85 @@ test "parse_file_to_spec" {
     #|  ]
     #|}
   let spec = parse_file_to_spec(file)
-
+  assert_eq(spec.tests.length(), 12)
+  assert_eq(spec.tests[0].name, "Inline")
+  assert_eq(
+    spec.tests[0].desc,
+    "Comment blocks should be removed from the template.",
+  )
+  assert_eq(spec.tests[0].template, "12345{{! Comment Block! }}67890")
+  assert_eq(spec.tests[0].expected, "1234567890")
+  assert_eq(spec.tests[1].name, "Multiline")
+  assert_eq(spec.tests[1].desc, "Multiline comments should be permitted.")
+  assert_eq(
+    spec.tests[1].template,
+    "12345{{!\n  This is a\n  multi-line comment...\n}}67890\n",
+  )
+  assert_eq(spec.tests[1].expected, "1234567890\n")
 }
 
 ///|
-extern "js" fn read_file(path : String) -> String = "moonbit:fs.read_file"
+extern "js" fn read_file(
+  path : String,
+  ok : (String) -> Result[String, Failure],
+  err : (String) -> Result[String, Failure]
+) -> Result[String, Failure] =
+  #|(d, ok, err) => {
+  #| const fs = require('fs');
+  #| try {
+  #|  return ok(fs.readFileSync(d).toString());
+  #| } catch (e) {
+  #|  return err(e.toString());
+  #| }
+  #|}
+
+///|
+fn load_spec(path : String) -> Spec raise {
+  let file = read_file(path, Ok(_), msg => Err(Failure(msg))).unwrap_or_error()
+  parse_file_to_spec(file)
+}
+
+///|
+pub fn load_spec_file(path : String) -> SpecFile raise {
+  let spec = load_spec(path)
+  let name = path
+    .split("/")
+    .last()
+    .or_error(Failure("Failed to get file name from path: " + path))
+    .to_string()
+  { name, spec }
+}
+
+///|
+test "load_spec" {
+  let spec = try? load_spec("./spec/specs/comments.json")
+  assert_true(spec.is_ok())
+}
+
+///|
+fn run_spec_test(self : SpecTest) -> Unit raise {
+  let result = @lib.parse(self.template, self.data)
+  assert_eq(result, self.expected)
+}
+
+///|
+pub fn run_spec_tests(self : SpecFile) -> Unit raise {
+  let failures = self.spec.tests.filter_map(fn(t) {
+    let result = try? t.run_spec_test()
+    match result {
+      Ok(_) => None
+      Err(e) => Some((t.name, e))
+    }
+  })
+  if failures.is_empty() {
+    return
+  }
+  let error_messages = failures
+    .map(fn(f) {
+      let (name, e) = f
+      "Test '" + name + "' failed: " + e.to_string()
+    })
+    .join("\n")
+  let error_message = "Some spec(\{self.name}) tests failed:\n" + error_messages
+  fail(error_message)
+}
