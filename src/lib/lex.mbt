@@ -6,7 +6,7 @@ priv struct Token {
   value : String
   line : Int
   col : Int
-} derive(Eq, Show)
+} derive(Show)
 
 ///|
 priv enum TokenType {
@@ -40,7 +40,7 @@ priv struct Lexer {
 } derive(Show)
 
 ///|
-fn new(
+fn Lexer::new(
   name : String,
   input : String,
   leftDelim~ : String = "{{",
@@ -65,7 +65,7 @@ priv enum StateFn {
 }
 
 ///|
-fn state_text(self : Lexer) -> StateFn {
+fn Lexer::state_text(self : Lexer) -> StateFn {
   for {
     if self.input.charcodes(start=self.pos).has_prefix(self.leftDelim) {
       if self.pos > self.start {
@@ -85,7 +85,7 @@ fn state_text(self : Lexer) -> StateFn {
 }
 
 ///|
-fn state_left_delim(self : Lexer) -> StateFn {
+fn Lexer::state_left_delim(self : Lexer) -> StateFn {
   self.seek(self.leftDelim.length())
   if self.peek() == Rune::Char('=') {
     ignore(self.next())
@@ -96,14 +96,14 @@ fn state_left_delim(self : Lexer) -> StateFn {
 }
 
 ///|
-fn state_right_delim(self : Lexer) -> StateFn {
+fn Lexer::state_right_delim(self : Lexer) -> StateFn {
   self.seek(self.rightDelim.length())
   self.emit(TokenType::RightDelim)
   StateFn::Func(s => s.state_text())
 }
 
 ///|
-fn ignore_(self : Lexer) -> Unit {
+fn Lexer::ignore_(self : Lexer) -> Unit {
   self.start = self.pos
 }
 
@@ -147,7 +147,7 @@ priv enum DelimFn {
 }
 
 ///|
-fn is_none_delim_fn(self : DelimFn) -> Bool {
+fn DelimFn::is_none_delim_fn(self : DelimFn) -> Bool {
   match self {
     DelimFn::None => true
     _ => false
@@ -155,19 +155,19 @@ fn is_none_delim_fn(self : DelimFn) -> Bool {
 }
 
 ///|
-fn left_fn(self : Lexer, s : String) -> DelimFn {
+fn Lexer::left_fn(self : Lexer, s : String) -> DelimFn {
   self.leftDelim = s
-  return DelimFn::Func((l, s) => l.right_fn(s))
+  DelimFn::Func((l, s) => l.right_fn(s))
 }
 
 ///|
-fn right_fn(self : Lexer, s : String) -> DelimFn {
+fn Lexer::right_fn(self : Lexer, s : String) -> DelimFn {
   self.rightDelim = s
-  return DelimFn::None
+  DelimFn::None
 }
 
 ///|
-fn state_tag(self : Lexer) -> StateFn {
+fn Lexer::state_tag(self : Lexer) -> StateFn {
   if self.input.charcodes(start=self.pos).has_prefix("}" + self.rightDelim) {
     ignore(self.seek(1))
     self.emit(TokenType::RawEnd)
@@ -220,12 +220,12 @@ fn state_tag(self : Lexer) -> StateFn {
             self.error("unexpected character in tag: " + char.to_string())
           }
       }
-    EOF => return self.error("unclosed actin")
+    EOF => return self.error("unclosed action")
   }
 }
 
 ///|
-fn state_indent(self : Lexer) -> StateFn {
+fn Lexer::state_indent(self : Lexer) -> StateFn {
   for {
     let r = self.next()
     if not(r.is_alphanum()) {
@@ -238,7 +238,7 @@ fn state_indent(self : Lexer) -> StateFn {
 }
 
 ///|
-fn state_comment(self : Lexer) -> StateFn {
+fn Lexer::state_comment(self : Lexer) -> StateFn {
   let indexOfCommentEnd = self.input
     .charcodes(start=self.pos)
     .find(self.rightDelim)
@@ -253,7 +253,7 @@ fn state_comment(self : Lexer) -> StateFn {
 }
 
 ///|
-fn is_whitespaces(self : Rune) -> Bool {
+fn Rune::is_whitespaces(self : Rune) -> Bool {
   match self {
     Rune::Char(' ' | '\t' | '\n' | '\r') => true
     _ => false
@@ -261,7 +261,7 @@ fn is_whitespaces(self : Rune) -> Bool {
 }
 
 ///|
-fn is_alphanum(self : Rune) -> Bool {
+fn Rune::is_alphanum(self : Rune) -> Bool {
   match self {
     Rune::Char('_' | '.') => true
     Rune::Char(c) if c.is_ascii_digit() => true
@@ -279,10 +279,10 @@ impl Show for StateFn with output(_ : StateFn, logger : &Logger) {
 priv enum Rune {
   EOF
   Char(Char)
-} derive(Eq, Show)
+} derive(Eq)
 
 ///|
-fn next(self : Lexer) -> Rune {
+fn Lexer::next(self : Lexer) -> Rune {
   if self.pos >= self.input.length() {
     return Rune::EOF
   } else {
@@ -293,26 +293,26 @@ fn next(self : Lexer) -> Rune {
 }
 
 ///|
-fn seek(self : Lexer, n : Int) -> Unit {
+fn Lexer::seek(self : Lexer, n : Int) -> Unit {
   self.pos += n
 }
 
 ///|
-fn backup(self : Lexer) -> Unit {
+fn Lexer::backup(self : Lexer) -> Unit {
   if self.pos > 0 {
     self.pos -= 1
   }
 }
 
 ///|
-fn peek(self : Lexer) -> Rune {
+fn Lexer::peek(self : Lexer) -> Rune {
   let r = self.next()
   self.backup()
   r
 }
 
 ///|
-fn emit(self : Lexer, t : TokenType) -> Unit {
+fn Lexer::emit(self : Lexer, t : TokenType) -> Unit {
   let token = {
     type_: t,
     value: self.input.charcodes(start=self.start, end=self.pos).to_string(),
@@ -324,7 +324,7 @@ fn emit(self : Lexer, t : TokenType) -> Unit {
 }
 
 ///|
-fn error(self : Lexer, msg : String) -> StateFn {
+fn Lexer::error(self : Lexer, msg : String) -> StateFn {
   let token = {
     type_: TokenType::Error,
     value: msg,
@@ -336,7 +336,7 @@ fn error(self : Lexer, msg : String) -> StateFn {
 }
 
 ///|
-fn line_num(self : Lexer) -> Int {
+fn Lexer::line_num(self : Lexer) -> Int {
   self.input.charcodes(end=self.pos).split("\n").count()
 }
 
@@ -361,7 +361,7 @@ test {
 }
 
 ///|
-fn column_num(self : Lexer) -> Int {
+fn Lexer::column_num(self : Lexer) -> Int {
   let last_lf = self.input.charcodes(end=self.pos).to_string().rev_find("\n")
   match last_lf {
     Some(lf) => {
@@ -446,7 +446,7 @@ fn token(self : Lexer) -> Token {
 }
 
 ///|
-fn tokens(self : Lexer) -> Array[Token] raise Error {
+fn Lexer::tokens(self : Lexer) -> Array[Token] raise Error {
   let tokens = Array::new()
   for {
     let token = self.token()
@@ -462,7 +462,7 @@ fn tokens(self : Lexer) -> Array[Token] raise Error {
 ///|
 test {
   let input = "hello {{world}}"
-  let lexer = new("test", input)
+  let lexer = Lexer::new("test", input)
   let expected = [
     (TokenType::Text, "hello "),
     (TokenType::LeftDelim, "{{"),
@@ -475,7 +475,7 @@ test {
 ///|
 test {
   let input = "hello\n{{world}}"
-  let lexer = new("test", input)
+  let lexer = Lexer::new("test", input)
   let expected = [
     (TokenType::Text, "hello\n"),
     (TokenType::LeftDelim, "{{"),
@@ -488,7 +488,7 @@ test {
 ///|
 test {
   let input = "foo {{{bar}}}\nbaz {{! this is ignored }}"
-  let lexer = new("test", input)
+  let lexer = Lexer::new("test", input)
   let expected = [
     (TokenType::Text, "foo "),
     (TokenType::LeftDelim, "{{"),
@@ -508,7 +508,7 @@ test {
 ///|
 test {
   let input = "\nfoo {{bar}} baz {{=| |=}}\r\n |foo| |={{ }}=| {{bar}}"
-  let lexer = new("test", input)
+  let lexer = Lexer::new("test", input)
   let expected = [
     (TokenType::Text, "\nfoo "),
     (TokenType::LeftDelim, "{{"),
@@ -533,7 +533,7 @@ test {
 ///|
 test {
   let input = "{{=| |=}}\r\n"
-  let lexer = new("test", input)
+  let lexer = Lexer::new("test", input)
   let expected = [(TokenType::SetDelim, ""), (TokenType::Text, "\r\n")]
   assert_eq(lexer.tokens().map(t => (t.type_, t.value)), expected)
 }
