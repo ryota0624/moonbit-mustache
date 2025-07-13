@@ -158,6 +158,14 @@ test {
 }
 
 ///|
+test {
+  let lexer = Lexer::new("test", "Begin.\n{{! Comment Block! }}\nEnd.")
+  let parser = Parser::new(lexer)
+  let nodes = parser.parse()
+  println(nodes)
+}
+
+///|
 fn Parser::parse_tag(self : Parser) -> Node raise ParseError {
   let token = self.read()
   match token.type_ {
@@ -217,7 +225,10 @@ fn Parser::parse_comment(self : Parser) -> Node raise ParseError {
 }
 
 ///|
-fn Parser::parse_section(self : Parser, inverse : Bool) -> Node raise ParseError {
+fn Parser::parse_section(
+  self : Parser,
+  inverse : Bool
+) -> Node raise ParseError {
   let token = self.read()
   if token.type_ != Identifier {
     raise Parser::errorf(token, "unexpected token")

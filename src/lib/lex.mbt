@@ -537,3 +537,21 @@ test {
   let expected = [(TokenType::SetDelim, ""), (TokenType::Text, "\r\n")]
   assert_eq(lexer.tokens().map(t => (t.type_, t.value)), expected)
 }
+
+///|
+test {
+  // let input = "Begin.\n{{! Comment Block! }}\nEnd."
+  let input =
+    #|Begin.
+    #|{{! Comment Block! }}
+    #|End.
+  let lexer = Lexer::new("test", input)
+  assert_eq(lexer.tokens().map(t => (t.type_, t.value)), [
+    (Text, "Begin.\n"),
+    (LeftDelim, "{{"),
+    (Comment, "!"),
+    (Text, " Comment Block! "),
+    (RightDelim, "}}"),
+    (Text, "End."),
+  ])
+}

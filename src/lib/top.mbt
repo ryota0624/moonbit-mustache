@@ -1,5 +1,5 @@
-pub fn parse(template: String, data: Json) -> String {
-	// This function is a placeholder for the actual parsing logic.
-	// It should process the template and return the parsed result.
-	template
+///|
+pub fn parse(template : String, data : Json) -> String raise {
+   let output = try? Template::new("").parse_template(template).render([data])
+  output.unwrap_or_error()
 }

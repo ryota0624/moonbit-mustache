@@ -128,7 +128,7 @@ priv struct Template {
 }
 
 ///|
-fn Template::parse_string(
+fn Template::parse_template(
   self : Template,
   input : String
 ) -> RenderableTemplate raise ParseError {
@@ -178,7 +178,7 @@ fn RenderableTemplate::render(
 ///|
 test {
   let t = Template::new("")
-  let renderable = t.parse_string("hello\n{{world}}")
+  let renderable = t.parse_template("hello\n{{world}}")
   let rendered = renderable.render([Json::object({ "world": 4 })])
   println(rendered)
 }
