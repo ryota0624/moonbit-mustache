@@ -540,7 +540,6 @@ test {
 
 ///|
 test {
-  // let input = "Begin.\n{{! Comment Block! }}\nEnd."
   let input =
     #|Begin.
     #|{{! Comment Block! }}
