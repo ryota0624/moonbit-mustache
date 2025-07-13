@@ -1,15 +1,15 @@
 // spec of mustache
 
 ///|
-struct SpecFile {
+priv struct SpecFile {
   name : String
   spec : Spec
-} derive(Eq, Show, ToJson, FromJson)
+}
 
 ///|
 priv struct Spec {
   tests : Array[SpecTest]
-} derive(Eq, Show, ToJson, FromJson)
+} derive(FromJson)
 
 // spec test for mustache
 
@@ -20,7 +20,7 @@ priv struct SpecTest {
   template : String
   expected : String
   data : Json
-} derive(Eq, Show, ToJson, FromJson)
+} derive(FromJson)
 
 ///|
 fn parse_file_to_spec(file : String) -> Spec raise {
@@ -166,7 +166,7 @@ fn run_spec_test(self : SpecTest) -> Unit raise {
 }
 
 ///|
-pub fn run_spec_tests(self : SpecFile) -> Unit raise {
+fn run_spec_tests(self : SpecFile) -> Unit raise {
   let failures = self.spec.tests.filter_map(fn(t) {
     let result = try? t.run_spec_test()
     match result {
@@ -183,6 +183,7 @@ pub fn run_spec_tests(self : SpecFile) -> Unit raise {
       "Test '" + name + "' failed: " + e.to_string()
     })
     .join("\n")
-  let error_message = "Some spec(\{self.name}) tests failed(\{failures.length()}/\{self.spec.tests.length()}):\n" + error_messages
+  let error_message = "Some spec(\{self.name}) tests failed(\{failures.length()}/\{self.spec.tests.length()}):\n" +
+    error_messages
   fail(error_message)
 }

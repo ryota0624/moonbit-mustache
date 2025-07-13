@@ -20,7 +20,7 @@ fn load_spec(path : String) -> Spec raise {
 }
 
 ///|
-pub fn load_spec_file(path : String) -> SpecFile raise {
+fn load_spec_file(path : String) -> SpecFile raise {
   let spec = load_spec(path)
   let name = path
     .split("/")
@@ -30,7 +30,6 @@ pub fn load_spec_file(path : String) -> SpecFile raise {
   { name, spec }
 }
 
-///|
 test "load_spec" {
   let spec = try? load_spec("./spec/specs/comments.json")
   assert_true(spec.is_ok())
