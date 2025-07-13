@@ -20,7 +20,7 @@ fn Node::render(
     SectionNode(section) => section.render(context, t)
     VarNode(v) =>
       lookup(v.name, context)
-      .map(value => Node::printJson(value))
+      .map(value => Node::print_json(value))
       .map(printed => if v.escape { Node::escape(printed) } else { printed })
       .or_error(RenderingError("failed to lookup"))
     TextNode(text) => text
@@ -29,7 +29,7 @@ fn Node::render(
     PartialNode(part) => {
       let template = t.partials.get(part)
       match template {
-        Some(template) => template.withPartials(t.partials).render(context)
+        Some(template) => template.with_partials(t.partials).render(context)
         None => ""
       }
     }
@@ -37,7 +37,7 @@ fn Node::render(
 }
 
 ///|
-fn Node::printJson(json : Json) -> String {
+fn Node::print_json(json : Json) -> String {
   match json {
     String(s) => s
     Number(n) => n.to_string()
@@ -128,7 +128,7 @@ priv struct Template {
 }
 
 ///|
-fn Template::parseString(
+fn Template::parse_string(
   self : Template,
   input : String
 ) -> RenderableTemplate raise ParseError {
@@ -152,7 +152,7 @@ priv struct RenderableTemplate {
 }
 
 ///|
-fn RenderableTemplate::withPartials(
+fn RenderableTemplate::with_partials(
   self : RenderableTemplate,
   partials : Map[String, RenderableTemplate]
 ) -> RenderableTemplate {
@@ -178,7 +178,7 @@ fn RenderableTemplate::render(
 ///|
 test {
   let t = Template::new("")
-  let renderable = t.parseString("hello\n{{world}}")
+  let renderable = t.parse_string("hello\n{{world}}")
   let rendered = renderable.render([Json::object({ "world": 4 })])
   println(rendered)
 }

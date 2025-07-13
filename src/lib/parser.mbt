@@ -135,8 +135,8 @@ fn Parser::parse(self : Parser) -> Array[Node] raise ParseError {
       EOF => break
       Error => raise Parser::errorf(token, token.value)
       Text => nodes.push(TextNode(token.value))
-      LeftDelim => nodes.push(self.parseTag())
-      RawStart => nodes.push(self.parseRawTag())
+      LeftDelim => nodes.push(self.parse_tag())
+      RawStart => nodes.push(self.parse_raw_tag())
       SetDelim => nodes.push(DelimNode)
       _ => ()
     }
@@ -158,22 +158,22 @@ test {
 }
 
 ///|
-fn Parser::parseTag(self : Parser) -> Node raise ParseError {
+fn Parser::parse_tag(self : Parser) -> Node raise ParseError {
   let token = self.read()
   match token.type_ {
-    Identifier => self.parseVar(token, true)
-    RawStart => self.parseRawTag()
-    RawAlt => self.parseRawTag()
-    Comment => self.parseComment()
-    SectionInverse => self.parseSection(true)
-    SectionStart => self.parseSection(false)
-    Partial => self.parsePartial()
+    Identifier => self.parse_var(token, true)
+    RawStart => self.parse_raw_tag()
+    RawAlt => self.parse_raw_tag()
+    Comment => self.parse_comment()
+    SectionInverse => self.parse_section(true)
+    SectionStart => self.parse_section(false)
+    Partial => self.parse_partial()
     _ => raise ParseError::FormatError("unreachable code")
   }
 }
 
 ///|
-fn Parser::parseRawTag(self : Parser) -> Node raise ParseError {
+fn Parser::parse_raw_tag(self : Parser) -> Node raise ParseError {
   let token = self.read()
   if token.type_ != Identifier {
     raise Parser::errorf(token, "unexpected token")
@@ -190,7 +190,7 @@ fn Parser::parseRawTag(self : Parser) -> Node raise ParseError {
 }
 
 ///|
-fn Parser::parseVar(
+fn Parser::parse_var(
   self : Parser,
   ident : Token,
   escape : Bool
@@ -203,7 +203,7 @@ fn Parser::parseVar(
 }
 
 ///|
-fn Parser::parseComment(self : Parser) -> Node raise ParseError {
+fn Parser::parse_comment(self : Parser) -> Node raise ParseError {
   let mut comment = ""
   for {
     let token = self.read()
@@ -217,7 +217,7 @@ fn Parser::parseComment(self : Parser) -> Node raise ParseError {
 }
 
 ///|
-fn Parser::parseSection(self : Parser, inverse : Bool) -> Node raise ParseError {
+fn Parser::parse_section(self : Parser, inverse : Bool) -> Node raise ParseError {
   let token = self.read()
   if token.type_ != Identifier {
     raise Parser::errorf(token, "unexpected token")
@@ -247,18 +247,18 @@ fn Parser::parseSection(self : Parser, inverse : Bool) -> Node raise ParseError 
     }
   }
   // StartSection, Ientifier,  RightDelim
-  let nodes = self.subParser(tokens[:tokens.length() - 3].to_array()).parse()
+  let nodes = self.sub_parser(tokens[:tokens.length() - 3].to_array()).parse()
   SectionNode({ name: token.value, inverted: inverse, elems: nodes })
 }
 
 ///|
-fn Parser::subParser(_ : Parser, tokens : Array[Token]) -> Parser {
+fn Parser::sub_parser(_ : Parser, tokens : Array[Token]) -> Parser {
   let eofToken = { type_: TokenType::EOF, value: "", line: 0, col: 0 }
   { readToken: () => eofToken, buf: tokens.copy() }
 }
 
 ///|
-fn Parser::parsePartial(self : Parser) -> Node raise ParseError {
+fn Parser::parse_partial(self : Parser) -> Node raise ParseError {
   let token = self.read()
   if token.type_ != Identifier {
     raise Parser::errorf(token, "unexpected token")
