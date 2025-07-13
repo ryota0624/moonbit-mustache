@@ -196,7 +196,11 @@ test "load_spec" {
 ///|
 fn run_spec_test(self : SpecTest) -> Unit raise {
   let result = @lib.parse(self.template, self.data)
-  assert_eq(result, self.expected)
+  assert_eq(
+    result,
+    self.expected,
+    // msg="\{self.name}\n  actual=\{result}\n  want=\{self.expected}",
+  )
 }
 
 ///|
@@ -217,6 +221,6 @@ pub fn run_spec_tests(self : SpecFile) -> Unit raise {
       "Test '" + name + "' failed: " + e.to_string()
     })
     .join("\n")
-  let error_message = "Some spec(\{self.name}) tests failed:\n" + error_messages
+  let error_message = "Some spec(\{self.name}) tests failed(\{failures.length()}/\{self.spec.tests.length()}):\n" + error_messages
   fail(error_message)
 }
