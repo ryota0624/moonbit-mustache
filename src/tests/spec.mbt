@@ -157,7 +157,7 @@ test "parse_file_to_spec" {
 
 ///|
 fn run_spec_test(self : SpecTest) -> Unit raise {
-  let result = @lib.parse(self.template, self.data)
+  let result = @mustache.parse(self.template, self.data)
   assert_eq(
     result,
     self.expected,

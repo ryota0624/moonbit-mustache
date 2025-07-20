@@ -1,6 +1,6 @@
 {
   "import": [
-    "ryota0624/mustache/lib"
+    "ryota0624/mustache"
   ],
   "targets": {
     "load_spec.js.mbt": [
