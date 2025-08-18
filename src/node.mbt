@@ -40,7 +40,7 @@ fn Node::render(
 fn Node::print_json(json : Json) -> String {
   match json {
     String(s) => s
-    Number(n) => n.to_string()
+    Number(n, ..) => n.to_string()
     False => "false"
     True => "true"
     Null => "null"
@@ -122,8 +122,6 @@ priv suberror RenderingError String
 priv struct Template {
   name : String
   partials : Map[String, RenderableTemplate]
-  startDelim : String
-  endDelim : String
   silentMiss : Bool
 }
 
@@ -141,7 +139,7 @@ fn Template::parse_template(
 
 ///|
 fn Template::new(name : String) -> Template {
-  { name, partials: {}, startDelim: "", endDelim: "", silentMiss: false }
+  { name, partials: {}, silentMiss: false }
 }
 
 ///|

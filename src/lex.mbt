@@ -67,7 +67,7 @@ priv enum StateFn {
 ///|
 fn Lexer::state_text(self : Lexer) -> StateFn {
   for {
-    if self.input.charcodes(start=self.pos).has_prefix(self.leftDelim) {
+    if self.input.view(start_offset=self.pos).has_prefix(self.leftDelim) {
       if self.pos > self.start {
         self.emit(TokenType::Text)
       }
@@ -110,12 +110,12 @@ fn Lexer::ignore_(self : Lexer) -> Unit {
 ///|
 fn state_set_delim(self : Lexer) -> StateFn {
   let end = "=" + self.rightDelim
-  let endIndex = self.input.charcodes(start=self.pos).find(end)
+  let endIndex = self.input.view(start_offset=self.pos).find(end)
   match endIndex {
     None => return self.error("Unterminated set delimiter")
     Some(index) => {
       let delimis = self.input
-        .charcodes(start=self.pos, end=self.pos + index)
+        .view(start_offset=self.pos, end_offset=self.pos + index)
         .split(" ")
       if delimis.count() < 2 {
         self.error("set delimiters should be separated by a spac")
@@ -168,12 +168,12 @@ fn Lexer::right_fn(self : Lexer, s : String) -> DelimFn {
 
 ///|
 fn Lexer::state_tag(self : Lexer) -> StateFn {
-  if self.input.charcodes(start=self.pos).has_prefix("}" + self.rightDelim) {
+  if self.input.view(start_offset=self.pos).has_prefix("}" + self.rightDelim) {
     ignore(self.seek(1))
     self.emit(TokenType::RawEnd)
     return StateFn::Func(s => s.state_right_delim())
   }
-  if self.input.charcodes(start=self.pos).has_prefix(self.rightDelim) {
+  if self.input.view(start_offset=self.pos).has_prefix(self.rightDelim) {
     return StateFn::Func(s => s.state_right_delim())
   }
   match self.next() {
@@ -240,7 +240,8 @@ fn Lexer::state_indent(self : Lexer) -> StateFn {
 ///|
 fn Lexer::state_comment(self : Lexer) -> StateFn {
   let indexOfCommentEnd = self.input
-    .charcodes(start=self.pos)
+    .substring(start=self.pos)
+    .view()
     .find(self.rightDelim)
   match indexOfCommentEnd {
     None => self.error("unclosed tag for comment")
@@ -286,7 +287,7 @@ fn Lexer::next(self : Lexer) -> Rune {
   if self.pos >= self.input.length() {
     return Rune::EOF
   } else {
-    let c = self.input.char_at(self.pos)
+    let c = self.input.get_char(self.pos).unwrap()
     self.pos += 1
     return Rune::Char(c)
   }
@@ -315,7 +316,9 @@ fn Lexer::peek(self : Lexer) -> Rune {
 fn Lexer::emit(self : Lexer, t : TokenType) -> Unit {
   let token = {
     type_: t,
-    value: self.input.charcodes(start=self.start, end=self.pos).to_string(),
+    value: self.input
+    .view(start_offset=self.start, end_offset=self.pos)
+    .to_string(),
     line: self.line_num(),
     col: self.column_num(),
   }
@@ -337,7 +340,7 @@ fn Lexer::error(self : Lexer, msg : String) -> StateFn {
 
 ///|
 fn Lexer::line_num(self : Lexer) -> Int {
-  self.input.charcodes(end=self.pos).split("\n").count()
+  self.input.view(start_offset=0, end_offset=self.pos).split("\n").count()
 }
 
 ///|
@@ -362,15 +365,15 @@ test {
 
 ///|
 fn Lexer::column_num(self : Lexer) -> Int {
-  let last_lf = self.input.charcodes(end=self.pos).to_string().rev_find("\n")
+  let last_lf = self.input.view(end_offset=self.pos).to_string().rev_find("\n")
   match last_lf {
     Some(lf) => {
       if lf == self.pos {
         return 0
       }
-      self.input.charcodes(start=lf + 1, end=self.pos).length()
+      self.input.view(start_offset=lf + 1, end_offset=self.pos).length()
     }
-    None => self.input.charcodes(end=self.pos).length()
+    None => self.input.view(end_offset=self.pos).length()
   }
 }
 
@@ -402,7 +405,7 @@ test {
     println("\{k}")
   }
   println("---")
-  println(greeting.char_at(7)) // prints 'h'
+  println(greeting.get_char(7).unwrap()) // prints 'h'
 }
 
 ///|

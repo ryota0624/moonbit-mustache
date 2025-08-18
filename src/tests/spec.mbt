@@ -153,6 +153,10 @@ test "parse_file_to_spec" {
     "12345{{!\n  This is a\n  multi-line comment...\n}}67890\n",
   )
   assert_eq(spec.tests[1].expected, "1234567890\n")
+
+  // Create a SpecFile to satisfy the constructor warning
+  let _spec_file = SpecFile::{ name: "test", spec }
+
 }
 
 ///|

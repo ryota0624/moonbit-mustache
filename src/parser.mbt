@@ -22,7 +22,7 @@ fn Parser::read(self : Parser) -> Token {
 }
 
 ///| read N next token
-fn Parser::readn(self : Parser, n : Int) -> Array[Token] {
+fn Parser::_readn(self : Parser, n : Int) -> Array[Token] {
   let tokens = []
   for _ in 0..<n {
     let token = self.read()
@@ -72,18 +72,9 @@ fn Parser::readv(self : Parser, t : Token) -> Array[Token] raise ReachedEOF {
 }
 
 ///|
-fn Parser::peek(self : Parser) -> Token {
-  if self.buf.length() > 0 {
-    self.buf[0]
-  } else {
-    let t = (self.readToken)()
-    self.buf.push(t)
-    t
-  }
-}
 
 ///|
-fn Parser::peekn(self : Parser, n : Int) -> Array[Token] raise ReachedEOF {
+fn Parser::_peekn(self : Parser, n : Int) -> Array[Token] raise ReachedEOF {
   if self.buf.length() > n {
     self.buf[:n].to_array()
   } else {
@@ -99,7 +90,7 @@ fn Parser::peekn(self : Parser, n : Int) -> Array[Token] raise ReachedEOF {
 }
 
 ///|
-fn Parser::peekt(self : Parser, t : TokenType) -> Array[Token] raise {
+fn Parser::_peekt(self : Parser, t : TokenType) -> Array[Token] raise {
   for i in 0..<self.buf.length() {
     match self.buf[i].type_ {
       TokenType::EOF => raise ReachedEOF
