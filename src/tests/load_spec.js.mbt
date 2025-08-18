@@ -2,7 +2,7 @@
 extern "js" fn read_file(
   path : String,
   ok : (String) -> Result[String, Failure],
-  err : (String) -> Result[String, Failure]
+  err : (String) -> Result[String, Failure],
 ) -> Result[String, Failure] =
   #|(d, ok, err) => {
   #| const fs = require('fs');
@@ -30,6 +30,7 @@ fn load_spec_file(path : String) -> SpecFile raise {
   { name, spec }
 }
 
+///|
 test "load_spec" {
   let spec = try? load_spec("./spec/specs/comments.json")
   assert_true(spec.is_ok())

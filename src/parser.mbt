@@ -201,7 +201,7 @@ fn Parser::parse_raw_tag(self : Parser) -> Node raise ParseError {
 fn Parser::parse_var(
   self : Parser,
   ident : Token,
-  escape : Bool
+  escape : Bool,
 ) -> Node raise ParseError {
   let next = self.read()
   if next.type_ != RightDelim {
@@ -227,7 +227,7 @@ fn Parser::parse_comment(self : Parser) -> Node raise ParseError {
 ///|
 fn Parser::parse_section(
   self : Parser,
-  inverse : Bool
+  inverse : Bool,
 ) -> Node raise ParseError {
   let token = self.read()
   if token.type_ != Identifier {

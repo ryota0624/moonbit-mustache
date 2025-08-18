@@ -36,6 +36,6 @@ test {
     (lookup("e.f.g", ctx), Json::boolean(true)),
   ]
   for value in retrived {
-		assert_eq(value.0, Some(value.1))
+    assert_eq(value.0, Some(value.1))
   }
 }

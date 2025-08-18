@@ -14,7 +14,7 @@ priv enum Node {
 fn Node::render(
   self : Node,
   t : RenderableTemplate,
-  context : Context
+  context : Context,
 ) -> String raise RenderingError {
   match self {
     SectionNode(section) => section.render(context, t)
@@ -82,7 +82,7 @@ priv struct SectionNode {
 fn SectionNode::render(
   self : SectionNode,
   ctx : Context,
-  t : RenderableTemplate
+  t : RenderableTemplate,
 ) -> String raise RenderingError {
   fn renderElems(appendCtx : Context) -> String raise RenderingError {
     self.elems.fold(init="", (result, node) => result +
@@ -111,7 +111,7 @@ fn SectionNode::render(
 }
 
 ///|
-priv type Context Array[Json]
+priv struct Context(Array[Json])
 
 ///|
 priv suberror RenderingError String
@@ -130,7 +130,7 @@ priv struct Template {
 ///|
 fn Template::parse_template(
   self : Template,
-  input : String
+  input : String,
 ) -> RenderableTemplate raise ParseError {
   let l = Lexer::new(self.name, input)
   let p = Parser::new(l)
@@ -154,7 +154,7 @@ priv struct RenderableTemplate {
 ///|
 fn RenderableTemplate::with_partials(
   self : RenderableTemplate,
-  partials : Map[String, RenderableTemplate]
+  partials : Map[String, RenderableTemplate],
 ) -> RenderableTemplate {
   { partials, elms: self.elms, silentMiss: self.silentMiss }
 }
@@ -162,7 +162,7 @@ fn RenderableTemplate::with_partials(
 ///|
 fn RenderableTemplate::render(
   self : RenderableTemplate,
-  context : Context
+  context : Context,
 ) -> String raise RenderingError {
   let mut result = ""
   for elem in self.elms {

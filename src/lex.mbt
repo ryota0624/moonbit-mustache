@@ -44,7 +44,7 @@ fn Lexer::new(
   name : String,
   input : String,
   leftDelim~ : String = "{{",
-  rightDelim~ : String = "}}"
+  rightDelim~ : String = "}}",
 ) -> Lexer {
   {
     name,
