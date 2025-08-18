@@ -1,0 +1,14 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "ryota0624/mustache"
+
+// Values
+fn parse(String, Json) -> String raise
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
