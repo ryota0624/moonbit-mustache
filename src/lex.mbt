@@ -67,7 +67,7 @@ priv enum StateFn {
 ///|
 fn Lexer::state_text(self : Lexer) -> StateFn {
   for {
-    if (try? self.input[self.pos:]).or("").has_prefix(self.leftDelim) {
+    if (try? self.input[self.pos:].has_prefix(self.leftDelim)).or(false) {
       if self.pos > self.start {
         self.emit(TokenType::Text)
       }
@@ -110,7 +110,7 @@ fn Lexer::ignore_(self : Lexer) -> Unit {
 ///|
 fn state_set_delim(self : Lexer) -> StateFn {
   let end = "=" + self.rightDelim
-  let endIndex = (try? self.input[self.pos:]).or("").find(end)
+  let endIndex = (try? self.input[self.pos:].find(end)).or(None)
   match endIndex {
     None => return self.error("Unterminated set delimiter")
     Some(index) => {
@@ -168,12 +168,12 @@ fn Lexer::right_fn(self : Lexer, s : String) -> DelimFn {
 
 ///|
 fn Lexer::state_tag(self : Lexer) -> StateFn {
-  if (try? self.input[self.pos:]).or("").has_prefix("}" + self.rightDelim) {
+  if (try? self.input[self.pos:].has_prefix("}" + self.rightDelim)).or(false) {
     ignore(self.seek(1))
     self.emit(TokenType::RawEnd)
     return StateFn::Func(s => s.state_right_delim())
   }
-  if (try? self.input[self.pos:]).or("").has_prefix(self.rightDelim) {
+  if (try? self.input[self.pos:].has_prefix(self.rightDelim)).or(false) {
     return StateFn::Func(s => s.state_right_delim())
   }
   match self.next() {
@@ -239,9 +239,9 @@ fn Lexer::state_indent(self : Lexer) -> StateFn {
 
 ///|
 fn Lexer::state_comment(self : Lexer) -> StateFn {
-  let indexOfCommentEnd = (try? self.input[self.pos:])
-    .or("")
-    .find(self.rightDelim)
+  let indexOfCommentEnd = (try? self.input[self.pos:].find(self.rightDelim)).or(
+    None,
+  )
   match indexOfCommentEnd {
     None => self.error("unclosed tag for comment")
     Some(index) => {
@@ -320,7 +320,7 @@ fn Lexer::peek(self : Lexer) -> Rune {
 fn Lexer::emit(self : Lexer, t : TokenType) -> Unit {
   let token = {
     type_: t,
-    value: (try? self.input[self.start:self.pos]).or("").to_string(),
+    value: (try? self.input[self.start:self.pos].to_string()).or(""),
     line: self.line_num(),
     col: self.column_num(),
   }
@@ -342,7 +342,7 @@ fn Lexer::error(self : Lexer, msg : String) -> StateFn {
 
 ///|
 fn Lexer::line_num(self : Lexer) -> Int {
-  (try? self.input[:self.pos]).or("").split("\n").count()
+  (try? self.input[:self.pos].split("\n").count()).or(0)
 }
 
 ///|
@@ -367,15 +367,15 @@ test {
 
 ///|
 fn Lexer::column_num(self : Lexer) -> Int {
-  let last_lf = (try? self.input[:self.pos]).or("").rev_find("\n")
+  let last_lf = (try? self.input[:self.pos].rev_find("\n")).or(None)
   match last_lf {
     Some(lf) => {
       if lf == self.pos {
         return 0
       }
-      (try? self.input[lf + 1:self.pos]).or("").length()
+      (try? self.input[lf + 1:self.pos].length()).or(0)
     }
-    None => (try? self.input[:self.pos]).or("").length()
+    None => (try? self.input[:self.pos].length()).or(0)
   }
 }
 
