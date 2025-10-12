@@ -247,7 +247,7 @@ fn Lexer::state_comment(self : Lexer) -> StateFn {
     Some(index) => {
       ignore(self.seek(index))
       self.emit(TokenType::Text)
-      return StateFn::Func(s => s.state_right_delim())
+      StateFn::Func(s => s.state_right_delim())
     }
   }
 }
