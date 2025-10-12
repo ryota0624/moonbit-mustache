@@ -40,7 +40,7 @@ fn Node::render(
 fn Node::print_json(json : Json) -> String {
   match json {
     String(s) => s
-    Number(n) => n.to_string()
+    Number(n, ..) => n.to_string()
     False => "false"
     True => "true"
     Null => "null"
@@ -111,7 +111,7 @@ fn SectionNode::render(
 }
 
 ///|
-priv type Context Array[Json]
+priv struct Context(Array[Json])
 
 ///|
 priv suberror RenderingError String

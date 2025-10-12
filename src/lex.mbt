@@ -43,8 +43,8 @@ priv struct Lexer {
 fn Lexer::new(
   name : String,
   input : String,
-  leftDelim~ : String = "{{",
-  rightDelim~ : String = "}}"
+  leftDelim? : String = "{{",
+  rightDelim? : String = "}}",
 ) -> Lexer {
   {
     name,
@@ -67,7 +67,7 @@ priv enum StateFn {
 ///|
 fn Lexer::state_text(self : Lexer) -> StateFn {
   for {
-    if self.input.charcodes(start=self.pos).has_prefix(self.leftDelim) {
+    if (try? self.input[self.pos:].has_prefix(self.leftDelim)).or(false) {
       if self.pos > self.start {
         self.emit(TokenType::Text)
       }
@@ -110,15 +110,15 @@ fn Lexer::ignore_(self : Lexer) -> Unit {
 ///|
 fn state_set_delim(self : Lexer) -> StateFn {
   let end = "=" + self.rightDelim
-  let endIndex = self.input.charcodes(start=self.pos).find(end)
+  let endIndex = (try? self.input[self.pos:].find(end)).or(None)
   match endIndex {
     None => return self.error("Unterminated set delimiter")
     Some(index) => {
-      let delimis = self.input
-        .charcodes(start=self.pos, end=self.pos + index)
+      let delimis = (try? self.input[self.pos:self.pos + index])
+        .or("")
         .split(" ")
       if delimis.count() < 2 {
-        self.error("set delimiters should be separated by a spac")
+        self.error("set delimiters should be separated by a space")
       } else {
         let mut delimFn : DelimFn = DelimFn::Func((l, s) => l.left_fn(s))
         for delim in delimis {
@@ -168,12 +168,12 @@ fn Lexer::right_fn(self : Lexer, s : String) -> DelimFn {
 
 ///|
 fn Lexer::state_tag(self : Lexer) -> StateFn {
-  if self.input.charcodes(start=self.pos).has_prefix("}" + self.rightDelim) {
+  if (try? self.input[self.pos:].has_prefix("}" + self.rightDelim)).or(false) {
     ignore(self.seek(1))
     self.emit(TokenType::RawEnd)
     return StateFn::Func(s => s.state_right_delim())
   }
-  if self.input.charcodes(start=self.pos).has_prefix(self.rightDelim) {
+  if (try? self.input[self.pos:].has_prefix(self.rightDelim)).or(false) {
     return StateFn::Func(s => s.state_right_delim())
   }
   match self.next() {
@@ -239,9 +239,9 @@ fn Lexer::state_indent(self : Lexer) -> StateFn {
 
 ///|
 fn Lexer::state_comment(self : Lexer) -> StateFn {
-  let indexOfCommentEnd = self.input
-    .charcodes(start=self.pos)
-    .find(self.rightDelim)
+  let indexOfCommentEnd = (try? self.input[self.pos:].find(self.rightDelim)).or(
+    None,
+  )
   match indexOfCommentEnd {
     None => self.error("unclosed tag for comment")
     Some(index) => {
@@ -286,9 +286,14 @@ fn Lexer::next(self : Lexer) -> Rune {
   if self.pos >= self.input.length() {
     return Rune::EOF
   } else {
-    let c = self.input.char_at(self.pos)
-    self.pos += 1
-    return Rune::Char(c)
+    let c = self.input.get_char(self.pos)
+    match c {
+      None => return Rune::EOF
+      Some(c) => {
+        self.pos += 1
+        return Rune::Char(c)
+      }
+    }
   }
 }
 
@@ -315,7 +320,7 @@ fn Lexer::peek(self : Lexer) -> Rune {
 fn Lexer::emit(self : Lexer, t : TokenType) -> Unit {
   let token = {
     type_: t,
-    value: self.input.charcodes(start=self.start, end=self.pos).to_string(),
+    value: (try? self.input[self.start:self.pos].to_string()).or(""),
     line: self.line_num(),
     col: self.column_num(),
   }
@@ -337,7 +342,7 @@ fn Lexer::error(self : Lexer, msg : String) -> StateFn {
 
 ///|
 fn Lexer::line_num(self : Lexer) -> Int {
-  self.input.charcodes(end=self.pos).split("\n").count()
+  (try? self.input[:self.pos].split("\n").count()).or(0)
 }
 
 ///|
@@ -362,15 +367,15 @@ test {
 
 ///|
 fn Lexer::column_num(self : Lexer) -> Int {
-  let last_lf = self.input.charcodes(end=self.pos).to_string().rev_find("\n")
+  let last_lf = (try? self.input[:self.pos].rev_find("\n")).or(None)
   match last_lf {
     Some(lf) => {
       if lf == self.pos {
         return 0
       }
-      self.input.charcodes(start=lf + 1, end=self.pos).length()
+      (try? self.input[lf + 1:self.pos].length()).or(0)
     }
-    None => self.input.charcodes(end=self.pos).length()
+    None => (try? self.input[:self.pos].length()).or(0)
   }
 }
 
@@ -402,7 +407,7 @@ test {
     println("\{k}")
   }
   println("---")
-  println(greeting.char_at(7)) // prints 'h'
+  println(greeting.get_char(7)) // prints 'h'
 }
 
 ///|
@@ -540,6 +545,7 @@ test {
 
 ///|
 test {
+  // TODO: 落ちるテスト改行の扱いがバグっている
   let input =
     #|Begin.
     #|{{! Comment Block! }}

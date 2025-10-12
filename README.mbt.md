@@ -27,7 +27,7 @@ test {
 	)
   
 	assert_eq(
-		@lib.parse(template, data),
+		@mustache.parse(template, data),
 		"Alice: 30\nBob: 25\n"
 	)
 }
