@@ -185,5 +185,5 @@ fn SpecFile::run_spec_tests(self : SpecFile) -> Unit raise {
     .join("\n")
   let error_message = "Some spec(\{self.name}) tests failed(\{failures.length()}/\{self.spec.tests.length()}):\n" +
     error_messages
-  fail(error_message)
+  fail("count of failures: " + failures.length().to_string() + ", " + error_message)
 }

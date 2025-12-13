@@ -14,7 +14,7 @@ priv enum Node {
 fn Node::render(
   self : Node,
   t : RenderableTemplate,
-  context : Context
+  context : Context,
 ) -> String raise RenderingError {
   match self {
     SectionNode(section) => section.render(context, t)
@@ -22,7 +22,7 @@ fn Node::render(
       lookup(v.name, context)
       .map(value => Node::print_json(value))
       .map(printed => if v.escape { Node::escape(printed) } else { printed })
-      .or_error(RenderingError("failed to lookup"))
+      .unwrap_or_error(RenderingError("failed to lookup"))
     TextNode(text) => text
     DelimNode => ""
     CommentNode(_) => ""
@@ -82,15 +82,16 @@ priv struct SectionNode {
 fn SectionNode::render(
   self : SectionNode,
   ctx : Context,
-  t : RenderableTemplate
+  t : RenderableTemplate,
 ) -> String raise RenderingError {
   fn renderElems(appendCtx : Context) -> String raise RenderingError {
     self.elems.fold(init="", (result, node) => result +
-      node.render(t, Context([..appendCtx.inner(), ..ctx.inner()])))
+      node.render(t, Context([..appendCtx.0, ..ctx.0])))
   }
 
   let value = lookup(self.name, ctx)
-  if !value.is_empty() != self.inverted {
+  let is_falsy = is_falsy(value.unwrap_or(Json::null()))
+  if !is_falsy != self.inverted {
     match value {
       Some(Array(array)) =>
         array
@@ -98,7 +99,7 @@ fn SectionNode::render(
         .fold(init="", (result, ctx) => result + renderElems(ctx))
       _ =>
         renderElems(
-          if value.is_empty() {
+          if value is None {
             Context([])
           } else {
             Context([value.unwrap()])
@@ -106,15 +107,43 @@ fn SectionNode::render(
         )
     }
   } else {
-    raise RenderingError("failed to lookup")
+    return ""
   }
+}
+
+///|
+test {
+  let t = Template::new("")
+  let renderable = t.parse_template("hello {{^world}}world{{/world}}")
+  let rendered = renderable.render([
+    Json::object({ "world": Json::boolean(false) }),
+  ])
+  assert_eq(rendered, "hello world")
+  let rendered = renderable.render([
+    Json::object({ "world": Json::boolean(true) }),
+  ])
+  assert_eq(rendered, "hello ")
+}
+
+///|
+test {
+  let t = Template::new("")
+  let renderable = t.parse_template("hello {{#world}}world{{/world}}")
+  let rendered = renderable.render([
+    Json::object({ "world": Json::boolean(true) }),
+  ])
+  assert_eq(rendered, "hello world")
+  let rendered = renderable.render([
+    Json::object({ "world": Json::boolean(false) }),
+  ])
+  assert_eq(rendered, "hello ")
 }
 
 ///|
 priv struct Context(Array[Json])
 
 ///|
-priv suberror RenderingError String
+priv suberror RenderingError String derive(Show)
 
 // The Template type represents a template and its components.
 
@@ -122,15 +151,15 @@ priv suberror RenderingError String
 priv struct Template {
   name : String
   partials : Map[String, RenderableTemplate]
-  startDelim : String
-  endDelim : String
+  _start_delim : String
+  _end_delim : String
   silentMiss : Bool
 }
 
 ///|
 fn Template::parse_template(
   self : Template,
-  input : String
+  input : String,
 ) -> RenderableTemplate raise ParseError {
   let l = Lexer::new(self.name, input)
   let p = Parser::new(l)
@@ -141,7 +170,7 @@ fn Template::parse_template(
 
 ///|
 fn Template::new(name : String) -> Template {
-  { name, partials: {}, startDelim: "", endDelim: "", silentMiss: false }
+  { name, partials: {}, _start_delim: "", _end_delim: "", silentMiss: false }
 }
 
 ///|
@@ -154,7 +183,7 @@ priv struct RenderableTemplate {
 ///|
 fn RenderableTemplate::with_partials(
   self : RenderableTemplate,
-  partials : Map[String, RenderableTemplate]
+  partials : Map[String, RenderableTemplate],
 ) -> RenderableTemplate {
   { partials, elms: self.elms, silentMiss: self.silentMiss }
 }
@@ -162,7 +191,7 @@ fn RenderableTemplate::with_partials(
 ///|
 fn RenderableTemplate::render(
   self : RenderableTemplate,
-  context : Context
+  context : Context,
 ) -> String raise RenderingError {
   let mut result = ""
   for elem in self.elms {
@@ -173,12 +202,4 @@ fn RenderableTemplate::render(
     }
   }
   result
-}
-
-///|
-test {
-  let t = Template::new("")
-  let renderable = t.parse_template("hello\n{{world}}")
-  let rendered = renderable.render([Json::object({ "world": 4 })])
-  println(rendered)
 }

@@ -9,7 +9,7 @@ fn lookup(name : String, context : Context) -> Json? {
         lookup(tail, Context([value]))
       }))
   }
-  for c in context.inner() {
+  for c in context.0 {
     if name == "." {
       return Some(c)
     }
@@ -17,11 +17,24 @@ fn lookup(name : String, context : Context) -> Json? {
       Object(obj) => obj.get(name)
       _ => Some(c)
     }
-    if !value.is_empty() {
+    if value is Some(_) {
       return value
     }
   }
   return None
+}
+
+///|
+fn is_falsy(value : Json) -> Bool {
+  match value {
+    Null => true
+    False => true
+    String(s) => s.length() == 0
+    Array(a) => a.length() == 0
+    Object(_) => false
+    Number(n, ..) => n == 0.0
+    True => false
+  }
 }
 
 ///|
@@ -36,6 +49,6 @@ test {
     (lookup("e.f.g", ctx), Json::boolean(true)),
   ]
   for value in retrived {
-		assert_eq(value.0, Some(value.1))
+    assert_eq(value.0, Some(value.1))
   }
 }

@@ -166,6 +166,28 @@ test {
 }
 
 ///|
+test {
+  let lexer = Lexer::new("test", "hello {{^world}}world{{/world}}")
+  let parser = Parser::new(lexer)
+  let nodes = parser.parse()
+  println(nodes)
+}
+
+test {
+  let lexer = Lexer::new("test", "hello {{#world}}world{{/world}}")
+  let parser = Parser::new(lexer)
+  let nodes = parser.parse()
+  println(nodes)
+}
+
+test {
+  let lexer = Lexer::new("test", "hello {{world}}world")
+  let parser = Parser::new(lexer)
+  let nodes = parser.parse()
+  println(nodes)
+}
+
+///|
 fn Parser::parse_tag(self : Parser) -> Node raise ParseError {
   let token = self.read()
   match token.type_ {
