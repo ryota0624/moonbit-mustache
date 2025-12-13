@@ -108,7 +108,7 @@ fn Lexer::ignore_(self : Lexer) -> Unit {
 }
 
 ///|
-fn state_set_delim(self : Lexer) -> StateFn {
+fn Lexer::state_set_delim(self : Lexer) -> StateFn {
   let end = "=" + self.rightDelim
   let endIndex = (try? self.input[self.pos:].find(end)).or(None)
   match endIndex {
@@ -432,7 +432,7 @@ test {
 }
 
 ///|
-fn token(self : Lexer) -> Token {
+fn Lexer::token(self : Lexer) -> Token {
   for {
     let token = if self.tokens.is_empty() {
       Option::None

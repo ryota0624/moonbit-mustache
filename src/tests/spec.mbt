@@ -156,7 +156,7 @@ test "parse_file_to_spec" {
 }
 
 ///|
-fn run_spec_test(self : SpecTest) -> Unit raise {
+fn SpecTest::run_spec_test(self : SpecTest) -> Unit raise {
   let result = @mustache.parse(self.template, self.data)
   assert_eq(
     result,
@@ -166,7 +166,7 @@ fn run_spec_test(self : SpecTest) -> Unit raise {
 }
 
 ///|
-fn run_spec_tests(self : SpecFile) -> Unit raise {
+fn SpecFile::run_spec_tests(self : SpecFile) -> Unit raise {
   let failures = self.spec.tests.filter_map(fn(t) {
     let result = try? t.run_spec_test()
     match result {

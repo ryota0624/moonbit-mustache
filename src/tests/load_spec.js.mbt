@@ -25,7 +25,7 @@ fn load_spec_file(path : String) -> SpecFile raise {
   let name = path
     .split("/")
     .last()
-    .or_error(Failure("Failed to get file name from path: " + path))
+    .unwrap_or_error(Failure("Failed to get file name from path: " + path))
     .to_string()
   { name, spec }
 }
