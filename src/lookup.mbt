@@ -15,7 +15,7 @@ fn lookup(name : String, context : Context) -> Json? {
     }
     let value = match c {
       Object(obj) => obj.get(name)
-      _ => Some(c)
+      _ => None
     }
     if value is Some(_) {
       return value
